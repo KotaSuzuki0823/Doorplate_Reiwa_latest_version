@@ -1,9 +1,10 @@
 '''
 GUI
 '''
+import json
+import sys
 
 import PySimpleGUI as sg
-import json
 
 import bt
 
@@ -16,7 +17,16 @@ def loadFromAndroid():
 def onScreen(styledata):
     '''
     GUI表示する部分
+    https://qiita.com/dario_okazaki/items/656de21cab5c81cabe59
     :param styledata: Androidから送られてきたJSON形式のデータ
     :return:
     '''
-    sg.theme()
+    while(True):
+        try:
+            json.loads(styledata)
+        except json.JSONDecodeError as e:
+            print(sys.exc_info())
+            print(e)
+            continue
+
+        sg.theme(styledata.color)
