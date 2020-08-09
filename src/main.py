@@ -3,11 +3,18 @@ GUI
 '''
 import json
 import sys
+import multiprocessing
+import queue
 
+#https://pypi.org/project/PySimpleGUI/
 import PySimpleGUI as sg
 import bluetooth
 
-import bt
+#styledataの初期状態
+BlankStyledata = {'color': "Dark2", 'maintext': "離席中", 'subtext': "しばらく席を外しています"}
+#styledataのキュー（FIFO）
+StyledataQueue = queue.Queue()
+StyledataQueue.put(BlankStyledata)
 
 def loadFromAndroid():
     '''
@@ -15,8 +22,7 @@ def loadFromAndroid():
     https://qiita.com/shippokun/items/0953160607833077163f
     :return: json
     '''
-
-    while 1:
+    while(True):
         bsocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         port = 5
         bsocket.bind(port)
@@ -26,29 +32,44 @@ def loadFromAndroid():
         print ("Accepted connection from " + address)
 
         try:
-            data = client_sock.recv(1024)
+            data = client_sock.recv(1024)#受信するまでブロッキング
             print ("received [%s]" % data)
-        except KeyboardInterrupt:
+            #Queueへ格納
+            StyledataQueue.put(data)
+
+        except Exception as e:
+            print ("Exception:%s\n" % e)
+
+        except (bluetooth.BluetoothError, bluetooth.BluetoothSocket) as bte:
+            print ("Bluetooth:%s\n" % bte)
             client_socket.close()
-            server_socket.close()
-            break
+            bsocket.close()
+            StyledataQueue.put(BlankStyledata)
+            print ("Socket is Closed.(Disconnect) Put BlankStyledata.")
+
         except:
-            print ("Bluetooth error\n")
+            print ("Fatal:%s\n" % e)
             client_socket.close()
-            server_socket.close()
+            bsocket.close()
+            StyledataQueue.put(BlankStyledata)
             break
 
-def onScreen(styledata):
+        else:
+            print ("No error. loop")
+
+def onScreen():
     '''
     GUI表示する部分
     https://qiita.com/dario_okazaki/items/656de21cab5c81cabe59
-    :param styledata: Androidから送られてきたJSON形式のデータ
+    #:param styledata: Androidから送られてきたJSON形式のデータ
     :return:
     '''
     while(True):
         try:
+            styledata = StyledataQueue.get()
             json.loads(styledata)
-        except json.JSONDecodeError as e:
+
+        except Exception as e:
             print(sys.exc_info())
             print(e)
             continue
@@ -61,9 +82,6 @@ def onScreen(styledata):
             [sg.Text(styledata['subtext'])]
         ]
         window = sg.Window('ドアプレート', layout)
-
-def storeJSON():
-    pass
 
 if __name__ == "__main__":
     pass
