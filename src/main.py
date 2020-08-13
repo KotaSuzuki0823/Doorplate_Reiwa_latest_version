@@ -24,7 +24,7 @@ def loadFromAndroid():
     https://qiita.com/shippokun/items/0953160607833077163f
     :return: json
     '''
-    while (True):
+    while True:
         bsocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         port = 5
         bsocket.bind(port)
@@ -33,31 +33,32 @@ def loadFromAndroid():
         client_socket, address = bsocket.accept()
         print("Accepted connection from " + address)
 
-        try:
-            data = client_socket.recv(1024)  # 受信するまでブロッキング
-            print("received [%s]" % data)
-            # Queueへ格納
-            StyleDataQueue.put(data)
+        while True:
+            try:
+                # 受信するまでブロッキング
+                data = client_socket.recv(1024)
+                print("received [%s]" % data)
+                # Queueへ格納
+                StyleDataQueue.put(data)
 
-        except Exception as e:
-            print("Exception:%s\n" % e)
+            # Bluetooth関連の例外が発生した場合に処理
+            except (bluetooth.BluetoothError, bluetooth.BluetoothSocket) as bte:
+                print("Bluetooth:%s\n" % bte)
+                client_socket.close()
+                bsocket.close()
+                StyleDataQueue.put(DefaultStyleData)
+                print("Bluetooth:Socket is Closed.(Disconnect) Put DefaultStyleData.")
+                break
 
-        except (bluetooth.BluetoothError, bluetooth.BluetoothSocket) as bte:
-            print("Bluetooth:%s\n" % bte)
-            client_socket.close()
-            bsocket.close()
-            StyleDataQueue.put(DefaultStyleData)
-            print("Socket is Closed.(Disconnect) Put DefaultStyleData.")
+            except Exception as e:
+                print("Fatal:%s\n" % e)
+                client_socket.close()
+                bsocket.close()
+                break
 
-        except:
-            print("Fatal:%s\n" % e)
-            client_socket.close()
-            bsocket.close()
-            StyleDataQueue.put(DefaultStyleData)
-            break
-
-        else:
-            print("No error. loop")
+            # 例外が発生しなかった場合に処理
+            else:
+                print("No error. loop")
 
 
 def onScreen():
@@ -73,10 +74,12 @@ def onScreen():
 
         sg.theme(std['color'])
         layout = [
-            [sg.Text(std['maintext'], font=('ゴシック体', 24), size=(30, 1), justification='center', relief=sg.RELIEF_RIDGE)],
+            [sg.Text(std['maintext'], font=('ゴシック体', 24), size=(30, 1), justification='center',
+                     relief=sg.RELIEF_RIDGE)],
             [sg.Text(std['subtext'], font=('ゴシック体', 24), size=(30, 1), justification='center')]
         ]
-        window = sg.Window('ドアプレート', layout, no_titlebar=False, location=(0, 0), default_element_size=(40, 10)).Finalize()
+        window = sg.Window('ドアプレート', layout, no_titlebar=False, location=(0, 0),
+                           default_element_size=(40, 10)).Finalize()
         window.Maximize()
 
         event, values = window.read(timeout=2000)  # ウインドウ作成
