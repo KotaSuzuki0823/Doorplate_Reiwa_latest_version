@@ -5,6 +5,7 @@ import json
 import sys
 import multiprocessing
 import queue
+import concurrent.futures
 
 # https://pypi.org/project/PySimpleGUI/
 import PySimpleGUI as sg
@@ -91,4 +92,5 @@ def onScreen():
 
 
 if __name__ == "__main__":
-    pass
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    executor.submit(loadFromAndroid)
