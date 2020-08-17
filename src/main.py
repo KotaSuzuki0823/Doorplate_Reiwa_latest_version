@@ -2,97 +2,96 @@
 GUI
 '''
 import json
+import sys
+import multiprocessing
 import queue
-import concurrent.futures
 
-# https://pypi.org/project/PySimpleGUI/
+#https://pypi.org/project/PySimpleGUI/
 import PySimpleGUI as sg
 import bluetooth
 
-# style dataの初期状態
-DefaultStyleData = {'color': "Dark2", 'maintext': "離席中", 'subtext': "しばらく席を外しています"}
-# style dataのキュー（FIFO）
+#styledataの初期状態
+BlankStyledata = {'color': "Dark2", 'maintext': "離席中", 'subtext': "しばらく席を外しています"}
+#styledataのキュー（FIFO）
 StyleDataQueue = queue.Queue()
-StyleDataQueue.put(DefaultStyleData)
+StyleDataQueue.put(BlankStyledata)
 
 def loadFromAndroid():
-    """
+    '''
     Bluetoothを用いてAndroidからデータの読み込み
     https://qiita.com/shippokun/items/0953160607833077163f
     :return: json
-    """
-    while True:
-        print("Bluetooth:Creating Bluetooth socket")
+    '''
+    while(True):
         bsocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         port = 5
         bsocket.bind(port)
         bsocket.listen(1)
-        print("Bluetooth:listening...")
 
-        client_socket, address = bsocket.accept()
-        print("Bluetooth:Accepted connection from %s" % address)
+        client_socket,address = bsocket.accept()
+        print ("Accepted connection from " + address)
 
-        while True:
-            try:
-                # 受信するまでブロッキング
-                data = client_socket.recv(1024)
-                print("Bluetooth:received [%s]" % data)
-                # Queueへ格納
-                StyleDataQueue.put(data)
+        try:
+            data = client_sock.recv(1024)#受信するまでブロッキング
+            print ("received [%s]" % data)
+            #Queueへ格納
+            StyledataQueue.put(data)
 
-            # Bluetooth関連の例外が発生した場合に処理
-            except (bluetooth.BluetoothError, bluetooth.BluetoothSocket) as bte:
-                print("Bluetooth:%s\n" % bte)
-                client_socket.close()
-                bsocket.close()
-                StyleDataQueue.put(DefaultStyleData)
-                print("Bluetooth:Socket is Closed.(Disconnect) Put DefaultStyleData.")
-                break
+        except Exception as e:
+            print ("Exception:%s\n" % e)
 
-            except Exception as e:
-                print("Bluetooth:[Fatal] %s\n" % e)
-                client_socket.close()
-                bsocket.close()
-                break
+        except (bluetooth.BluetoothError, bluetooth.BluetoothSocket) as bte:
+            print ("Bluetooth:%s\n" % bte)
+            client_socket.close()
+            bsocket.close()
+            StyleDataQueue.put(BlankStyledata)
+            print ("Socket is Closed.(Disconnect) Put BlankStyledata.")
 
-            # 例外が発生しなかった場合に処理
-            else:
-                print("Bluetooth:No error. loop")
+        except:
+            print ("Fatal:%s\n" % e)
+            client_socket.close()
+            bsocket.close()
+            StyleDataQueue.put(BlankStyledata)
+            break
+
+        else:
+            print ("No error. loop")
 
 def onScreen():
-    """
+    '''
     GUI表示する部分
     https://qiita.com/dario_okazaki/items/656de21cab5c81cabe59
+    #:param styledata: Androidから送られてきたJSON形式のデータ
     :return:
-    """
-    while True:  # Event Loop
-        std = StyleDataQueue.get(block=True)
+    '''
+    while(True):
+        try:
+            styledata = StyleDataQueue.get()
+            json.loads(styledata)
 
-        sg.theme(std['color'])
+        except Exception as e:
+            print(sys.exc_info())
+            print(e)
+            continue
+
+        sg.theme(styledata['color'])
+
         layout = [
-            [sg.Text(std['maintext'], font=('ゴシック体', 36), size=(30, 1), justification='center',
-                     relief=sg.RELIEF_RIDGE)],
-            [sg.Text(std['subtext'], font=('ゴシック体', 24), size=(30, 1), justification='center')]
+            [sg.Text(styledata['maintext'], font=('ゴシック体', 60), size=(35, 1), justification='center', relief=sg.RELIEF_RIDGE)],
+            [sg.Text(styledata['subtext'], font=('ゴシック体', 48), size=(45, 1), justification='center')]
         ]
-        window = sg.Window('ドアプレート', layout, no_titlebar=False, location=(0, 0), default_element_size=(40, 10),
-                           element_justification='c', grab_anywhere=True).Finalize()
-        window.Maximize()
+        window = sg.Window('ドアプレート', layout, location=(0,0), size=(1920,1080), grab_anywhere=True)
 
-        event, values = window.read(timeout=30000)  # ウインドウ作成
+        event, values = window.read(timeout=10000)  # ウインドウ作成
         if event is None:
             window.close()
             break
 
-        # Queueが空でない場合(最新の情報があるなど)はウインドウを閉じる
+        # Queueが空でない場合はウインドウを閉じる
         if not StyleDataQueue.empty():
             window.close()
         else:
             continue
 
 if __name__ == "__main__":
-    # 並行処理にてBluetooth通信を開始
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    executor.submit(loadFromAndroid)
-
-    # GUIの表示
-    onScreen()
+    pass
