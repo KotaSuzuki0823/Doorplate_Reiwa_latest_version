@@ -5,6 +5,7 @@ import json
 import sys
 import multiprocessing
 import queue
+from concurrent.futures import ThreadPoolExecutor
 
 #https://pypi.org/project/PySimpleGUI/
 import PySimpleGUI as sg
@@ -80,7 +81,7 @@ def onScreen():
             [sg.Text(styledata['maintext'], font=('ゴシック体', 60), size=(35, 1), justification='center', relief=sg.RELIEF_RIDGE)],
             [sg.Text(styledata['subtext'], font=('ゴシック体', 48), size=(45, 1), justification='center')]
         ]
-        window = sg.Window('ドアプレート', layout, location=(0,0), size=(1920,1080), grab_anywhere=True)
+        window = sg.Window('ドアプレート', layout, location=(0,0), size=(1920,1200), grab_anywhere=True)
 
         event, values = window.read(timeout=10000)  # ウインドウ作成
         if event is None:
@@ -94,4 +95,7 @@ def onScreen():
             continue
 
 if __name__ == "__main__":
-    pass
+    with ThreadPoolExecutor(1) as executor:
+        future = executor.submit(loadFromAndroid)
+    
+    onScreen()
