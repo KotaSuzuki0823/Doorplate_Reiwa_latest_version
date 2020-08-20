@@ -69,8 +69,9 @@ def onScreen():
     """
     while True:
         try:
+            print ("getting styledate from queue...")
             styledata = StyleDataQueue.get()
-            json.loads(styledata)
+            #json.loads(styledata)
 
         except Exception as e:
             print(sys.exc_info())
