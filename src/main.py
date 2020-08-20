@@ -15,57 +15,59 @@ import bluetooth
 BlankStyledata = {'color': "Dark2", 'maintext': "離席中", 'subtext': "しばらく席を外しています"}
 #styledataのキュー（FIFO）
 StyleDataQueue = queue.Queue()
-StyleDataQueue.put(BlankStyledata)
+StyleDataQueue.put({'color': "Dark2", 'maintext': "在室中", 'subtext': "現在部屋にいます．"})
 
 def loadFromAndroid():
-    '''
+    """
     Bluetoothを用いてAndroidからデータの読み込み
     https://qiita.com/shippokun/items/0953160607833077163f
     :return: json
-    '''
-    while(True):
+    """
+    while True:
+        print ("Bluetooth:Socket is create.")
         bsocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         port = 5
         bsocket.bind(port)
+        print ("Bluetooth:Listening...")
         bsocket.listen(1)
 
         client_socket,address = bsocket.accept()
-        print ("Accepted connection from " + address)
+        print ("Bluetooth:Accepted connection from " + address)
 
         try:
             data = client_sock.recv(1024)#受信するまでブロッキング
-            print ("received [%s]" % data)
+            print ("Bluetooth:received [%s]" % data)
             #Queueへ格納
             StyledataQueue.put(data)
 
         except Exception as e:
-            print ("Exception:%s\n" % e)
+            print ("Bluetooth:[Exception]%s\n" % e)
 
         except (bluetooth.BluetoothError, bluetooth.BluetoothSocket) as bte:
             print ("Bluetooth:%s\n" % bte)
             client_socket.close()
             bsocket.close()
             StyleDataQueue.put(BlankStyledata)
-            print ("Socket is Closed.(Disconnect) Put BlankStyledata.")
+            print ("Bluetooth:Socket is Closed.(Disconnect) Put BlankStyledata.(bluetooth exception)")
 
         except:
-            print ("Fatal:%s\n" % e)
+            print ("Bluetooth:[Fatal]\n")
             client_socket.close()
             bsocket.close()
             StyleDataQueue.put(BlankStyledata)
             break
 
         else:
-            print ("No error. loop")
+            print ("Bluetooth:No error. loop")
 
 def onScreen():
-    '''
+    """
     GUI表示する部分
     https://qiita.com/dario_okazaki/items/656de21cab5c81cabe59
     #:param styledata: Androidから送られてきたJSON形式のデータ
     :return:
-    '''
-    while(True):
+    """
+    while True:
         try:
             styledata = StyleDataQueue.get()
             json.loads(styledata)
