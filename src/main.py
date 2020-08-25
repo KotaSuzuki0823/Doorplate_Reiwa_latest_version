@@ -77,7 +77,8 @@ def onScreen():
             print(sys.exc_info())
             print(e)
             continue
-
+        
+        print ("Setting coler theme")
         sg.theme(styledata['color'])
 
         layout = [
