@@ -101,8 +101,8 @@ def onScreen():
         sg.theme_text_color(Text_Color_Code)
 
         layout = [
-            [sg.Text(styledata['maintext'], font=('ゴシック体', 60), size=(35, 1), justification='center', relief=sg.RELIEF_RIDGE)],
-            [sg.Text(styledata['subtext'], font=('ゴシック体', 48), size=(45, 1), justification='center')]
+            [sg.Text(styledata['Title'], font=('ゴシック体', 60), size=(35, 1), justification='center', relief=sg.RELIEF_RIDGE)],
+            [sg.Text(styledata['SubTitle'], font=('ゴシック体', 48), size=(45, 1), justification='center')]
         ]
 
         window = sg.Window('ドアプレート', layout, location=(0,0), size=(1920,1200), grab_anywhere=True)
@@ -119,7 +119,7 @@ def onScreen():
             continue
 
 if __name__ == "__main__":
-    #with ThreadPoolExecutor(1) as executor:
-    #    future = executor.submit(loadFromAndroid)
+    with ThreadPoolExecutor(1) as executor:
+        future = executor.submit(loadFromAndroid)
     
     onScreen()
