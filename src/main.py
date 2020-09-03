@@ -12,16 +12,16 @@ import PySimpleGUI as sg
 import bluetooth
 
 #styledataの初期状態
-BlankStyledata = {'color': "Dark2", 'maintext': "離席中", 'subtext': "しばらく席を外しています"}
+BlankStyledata = {'Title': "離席中", 'SubTitle': "しばらく席を外しています", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF"}
 #styledataのキュー（FIFO）
 StyleDataQueue = queue.Queue()
-StyleDataQueue.put({'color': "Dark2", 'maintext': "在室中", 'subtext': "現在部屋にいます．"})
+StyleDataQueue.put({'Title': "在席中", 'SubTitle': "現在部屋にいます", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF"})
 
 def loadFromAndroid():
     """
     Bluetoothを用いてAndroidからデータの読み込み
     https://qiita.com/shippokun/items/0953160607833077163f
-    :return: json
+    :return:
     """
     while True:
         print ("Bluetooth:Socket is create.")
@@ -35,22 +35,33 @@ def loadFromAndroid():
         print ("Bluetooth:Accepted connection from " + address)
 
         try:
-            data = client_sock.recv(1024)#受信するまでブロッキング
+            # 受信するまでブロッキング
+            data = client_sock.recv(1024)
             print ("Bluetooth:received [%s]" % data)
-            #Queueへ格納
-            StyledataQueue.put(data)
+            # 受信したデータを辞書型（JSON）に変換
+            jsondata = json.loads(data)
+            
+            # Queueへ格納
+            StyledataQueue.put(jsondata)
 
-        except Exception as e:
-            print ("Bluetooth:[Exception]%s\n" % e)
+        except (json.JSONDecodeError, ValueError) as je:
+            # JSON変換に関連する例外（ValueErrorはJSONDecodeErrorの親クラス）
+            print ("Bluetooth:[JSON Exception]%s\n" % je)
 
         except (bluetooth.BluetoothError, bluetooth.BluetoothSocket) as bte:
+            # Bluetoothに関連する例外
             print ("Bluetooth:%s\n" % bte)
             client_socket.close()
             bsocket.close()
-            StyleDataQueue.put(BlankStyledata)
-            print ("Bluetooth:Socket is Closed.(Disconnect) Put BlankStyledata.(bluetooth exception)")
+            #StyleDataQueue.put(BlankStyledata)
+            print ("Bluetooth:Socket is Closed.(Disconnect)")
+
+        except Exception as e:
+            # 上記以外の例外
+            print ("Bluetooth:[Exception]%s\n" % e)
 
         except:
+            # クリティカルな例外（終了させる）
             print ("Bluetooth:[Fatal]\n")
             client_socket.close()
             bsocket.close()
@@ -79,12 +90,21 @@ def onScreen():
             continue
         
         print ("Setting coler theme")
-        sg.theme(styledata['color'])
+        sg.theme('Dark2')
+        
+        Background_Color_Code = '#' + styledata['Background_Color'][2:7]
+        Text_Color_Code = '#' + styledata['Text_Color'][2:7]
+
+        # 背景の色を変更
+        sg.theme_background_color(Background_Color_Code)
+        # 文字カラーの変更
+        sg.theme_text_color(Text_Color_Code)
 
         layout = [
             [sg.Text(styledata['maintext'], font=('ゴシック体', 60), size=(35, 1), justification='center', relief=sg.RELIEF_RIDGE)],
             [sg.Text(styledata['subtext'], font=('ゴシック体', 48), size=(45, 1), justification='center')]
         ]
+
         window = sg.Window('ドアプレート', layout, location=(0,0), size=(1920,1200), grab_anywhere=True)
 
         event, values = window.read(timeout=10000)  # ウインドウ作成
@@ -99,7 +119,7 @@ def onScreen():
             continue
 
 if __name__ == "__main__":
-    with ThreadPoolExecutor(1) as executor:
-        future = executor.submit(loadFromAndroid)
+    #with ThreadPoolExecutor(1) as executor:
+    #    future = executor.submit(loadFromAndroid)
     
     onScreen()
