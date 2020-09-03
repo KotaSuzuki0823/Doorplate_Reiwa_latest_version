@@ -92,8 +92,8 @@ def onScreen():
         print ("Setting coler theme")
         sg.theme('Dark2')
         
-        Background_Color_Code = '#' + styledata['Background_Color'][2:7]
-        Text_Color_Code = '#' + styledata['Text_Color'][2:7]
+        Background_Color_Code = '#' + styledata['Background_Color'][2:8]
+        Text_Color_Code = '#' + styledata['Text_Color'][2:8]
 
         # 背景の色を変更
         sg.theme_background_color(Background_Color_Code)
