@@ -1,17 +1,20 @@
-'''
+"""
 ラズパイカメラで動体検知し，Android端末に通知
 参考：https://dream-soft.mydns.jp/blog/developper/smarthome/2020/02/678/#toc6
-'''
+"""
 
 import time
 import datetime
 import requests
 import subprocess
 import json
+import os
 import cv2
 
+# ホームディレクトリのパス
+HOME = os.environ['HOME']
 # 画像の格納パス
-pictpath = '/home/pi/camera/picts'
+picpath = HOME + '/camera/picts'
 
 # Push通知のURL
 url = 'https://fcm.googleapis.com/fcm/send'
@@ -25,26 +28,45 @@ detectSize = 1000
 # プッシュ通知の認証キー
 AUTHORIZATION_KEY = 'key=AAAAlNSzCwE:APA91bHCIcrJeRbN13m2QEY5pXjgzwpQ_q5L6qlcdBk1NJQFx2ffGxja9EHrg62Zd_sNm_r6C6HIuRKkNjygo0WhuHuYc7mGSwFGBGXiR44G6S80gKMtr3TtwnFbh4eIepOMRT8nHn7c'
 
-def getPhoto(photopath):
+
+def makePicpathDir(path):
     """
-    ラズパイカメラで写真を撮影
+    撮影した写真を格納するディレクトリを作成する関数
+    :param path: 保存先のパス
     :return:
     """
-    cmd = ["raspistill", "-t", "2000", "-o", photopath]
-    print("Run raspistill...")
     try:
-        subprocess.check_call(cmd)
-        takePhotoTime = datetime.datetime.now()
-    except Exception as e:
-        print("subprocess.check_call() failed:"+ e)
+        os.makedirs(picpath)
+        print('Created the Directory(' + path + ') ')
+    except FileExistsError:
         return
 
-@staticmethod
+
+def getPhoto(dirpath):
+    """
+    ラズパイカメラで写真を撮影
+    :return:　String型　撮影した画像のパス
+    """
+    nowstr = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    photopath = dirpath + "/" + nowstr + ".jpg"
+    cmd = ["raspistill", "-t", "2000", "-o", photopath]
+
+    try:
+        print("Run raspistill...")
+        subprocess.check_call(cmd)
+
+    except Exception as e:
+        print("subprocess.check_call() failed:" + e)
+        exit(1)
+
+    return photopath
+
+
 def moveDetect(img):
     """
     最新の写真と1つ前の写真を比較して，差分から動体検知をする
     :parm:img cv2のImage型変数 最新の写真
-    :return:
+    :return:　bool型　検知結果
     """
     global befImg
 
@@ -54,21 +76,22 @@ def moveDetect(img):
     # 前画像がない場合、現画像を保存し終了
     if befImg is None:
         befImg = grayImg.copy().astype("float")
-        return
+        print('Before image is not found. (befImg is None) ')
+        return False
 
     # 前画像との差分を取得する
     cv2.accumulateWeighted(grayImg, befImg, 0.00001)
     delta = cv2.absdiff(grayImg, cv2.convertScaleAbs(befImg))
     thresh = cv2.threshold(delta, 50, 255, cv2.THRESH_BINARY)[1]
-    image, contours, h = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  
+    image, contours, h = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # 画像内の最も大きな差分を求める
-    max_area=0
+    max_area = 0
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if max_area < area:
             max_area = area
-    
+
     # 現在時間を取得
     nowStr = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     nowTime = time.time()
@@ -78,17 +101,19 @@ def moveDetect(img):
 
     # 動体が無かったら終了
     if max_area < detectSize:
-        return
-    
+        return False
+
     # プッシュ通知を送信
     sendNotificationToAndroid()
 
     # 画像をファイルに保存
-    filename = pictpath+"/move_"+nowStr+".jpg"
+    filename = picpath + "/move_" + nowStr + ".jpg"
     cv2.imwrite(filename, img)
 
     # ログ出力
-    print(nowStr+' 動体検知 '+filename+' '+str(max_area))
+    print(nowStr + ' 動体検知 ' + filename + ' ' + str(max_area))
+    return True
+
 
 def sendNotificationToAndroid():
     """
@@ -99,7 +124,23 @@ def sendNotificationToAndroid():
     headers = {'Authorization': AUTHORIZATION_KEY, 'Content-Type': 'application/json'}
     r = requests.post(url, headers=headers, data=json.dumps())
 
+    # レスポンスの表示
     print(r.text)
 
+
 if __name__ == "__main__":
-    pass
+    makePicpathDir(picpath)
+    try:
+        print("Running System, press Ctrl-C to exit")
+        while True:
+            photopath = getPhoto(picpath)
+            move = moveDetect(cv2.imread(photopath))
+            if move:
+                # 動態検知した場合，プッシュ通知を送信
+                sendNotificationToAndroid()
+
+            # 一時停止
+            time.sleep(interval)
+
+    except KeyboardInterrupt:
+        print(KeyboardInterrupt)
