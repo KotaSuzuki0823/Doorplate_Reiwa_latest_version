@@ -49,7 +49,7 @@ def moveDetect(img):
     global befImg
 
     # 入力画像をグレースケールに変換
-    grayImg=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    grayImg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # 前画像がない場合、現画像を保存し終了
     if befImg is None:
@@ -97,7 +97,7 @@ def sendNotificationToAndroid():
     """
     payload = {'notification': "ドアプレート", 'body': "訪問者を検知しました．"}
     headers = {'Authorization': AUTHORIZATION_KEY, 'Content-Type': 'application/json'}
-    r = requests.post(url,params=payload, data=json.dumps(payload))
+    r = requests.post(url, headers=headers, data=json.dumps())
 
     print(r.text)
 
