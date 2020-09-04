@@ -122,7 +122,7 @@ def sendNotificationToAndroid():
     """
     payload = {'notification': "ドアプレート", 'body': "訪問者を検知しました．"}
     headers = {'Authorization': AUTHORIZATION_KEY, 'Content-Type': 'application/json'}
-    r = requests.post(url, headers=headers, data=json.dumps())
+    r = requests.post(url, headers=headers, data=json.dumps(payload))
 
     # レスポンスの表示
     print(r.text)
