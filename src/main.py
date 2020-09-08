@@ -1,6 +1,7 @@
 '''
 GUI
 '''
+import socket
 import json
 import sys
 import queue
@@ -8,13 +9,15 @@ from concurrent.futures import ThreadPoolExecutor
 
 #https://pypi.org/project/PySimpleGUI/
 import PySimpleGUI as sg
-import bluetooth
+# import bluetooth
 
 #styledataの初期状態
-BLANK_STYLEDATA = {'Title': "離席中", 'SubTitle': "しばらく席を外しています", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF"}
+BLANK_STYLEDATA = {'Title': "離席中", 'SubTitle': "しばらく席を外しています", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF", 'Token': ""}
 #styledataのキュー（FIFO）
 styledata_queue = queue.Queue()
-styledata_queue.put({'Title': "在席中", 'SubTitle': "現在部屋にいます", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF"})
+# tyledata_queue.put({'Title': "離席中", 'SubTitle': "しばらく席を外しています", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF", 'Token': ""})
+
+args = sys.argv
 
 def load_android():
     """
@@ -22,57 +25,37 @@ def load_android():
     https://qiita.com/shippokun/items/0953160607833077163f
     :return:
     """
-    while True:
-        print("Bluetooth:Socket is create.")
-        bsocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-        bsocket.bind(('', bluetooth.PORT_ANY))
-        print("Bluetooth:Listening...")
-        bsocket.listen(1)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((args[1], 55555))
+        print("Socket:Create socket"+args[1]+" 55555")
 
-        uuid = '00001101-0000-1000-8000-00805F9B34FB'
-        bluetooth.advertise_service(
-            bsocket, "MyServer", service_id=uuid,
-            service_classes = [uuid, bluetooth.SERIAL_PORT_CLASS],
-            profiles = [bluetooth.SERIAL_PORT_PROFILE],
-        )
-        print("Bluetooth:UUID is " + uuid)
-        client_socket, address = bsocket.accept()
-        print("Bluetooth:Accepted connection from " + address)
-        try:
-            # 受信するまでブロッキング
-            data = client_socket.recv(1024)
-            print("Bluetooth:received [%s]" % data)
-            # 受信したデータを辞書型（JSON）に変換
-            jsondata = json.loads(data)
+        s.listen(1)
+        print("Socket:Listening...")
 
-            # Queueへ格納
-            styledata_queue.put(jsondata)
+        while True:
+            # 誰かがアクセスしてきたら、コネクションとアドレスを入れる
+            conn, addr = s.accept()
+            print("Socket:accept " + addr)
+            try:
+                # データを受け取る
+                data = conn.recv(1024)
+                print("Socket:"+data)
+                jsondata = json.loads(data)
+                styledata_queue.put(jsondata)
 
-        except (json.JSONDecodeError, ValueError) as jsone:
-            # JSON変換に関連する例外（ValueErrorはJSONDecodeErrorの親クラス）
-            print("Bluetooth:[JSON Exception]%s\n" % jsone)
+            except (json.JSONDecodeError, ValueError, queue.Full) as jsone:
+                # JSON変換に関連する例外（ValueErrorはJSONDecodeErrorの親クラス）
+                print("Socket:[JSON Exception]%s\n" % jsone)
 
-        except (bluetooth.BluetoothError, bluetooth.BluetoothSocket) as bte:
-            # Bluetoothに関連する例外
-            print("Bluetooth:%s\n" % bte)
-            client_socket.close()
-            bsocket.close()
-            #styledata_queue.put(BLANK_STYLEDATA)
-            print("Bluetooth:Socket is Closed.(Disconnect)")
+            except socket.error as e:
+                # クリティカルな例外（終了させる）
+                print("Socket:[Fatal]\n")
+                styledata_queue.put(BLANK_STYLEDATA)
+                break
 
-        except queue.Full as queue_ex:
-            print(queue_ex)
+            finally:
+                conn.close()
 
-        except Exception as e:
-            # クリティカルな例外（終了させる）
-            print("Bluetooth:[Fatal]\n")
-            client_socket.close()
-            bsocket.close()
-            styledata_queue.put(BLANK_STYLEDATA)
-            break
-
-        else:
-            print("Bluetooth:No error. loop")
 
 def on_screen():
     """
@@ -104,8 +87,10 @@ def on_screen():
         sg.theme_text_color(text_coler_code)
 
         layout = [
-            [sg.Text(styledata['Title'], font=('ゴシック体', 60), size=(35, 1), justification='center', relief=sg.RELIEF_RIDGE)],
-            [sg.Text(styledata['SubTitle'], font=('ゴシック体', 48), size=(45, 1), justification='center')]
+            [sg.Text(styledata['Title'], font=('ゴシック体', 60), size=(35, 1),\
+            justification='center', relief=sg.RELIEF_RIDGE)],
+            [sg.Text(styledata['SubTitle'], font=('ゴシック体', 48), size=(45, 1),\
+            justification='center')]
         ]
 
         window = sg.Window('ドアプレート', layout, location=(0, 0), size=(1920, 1200), grab_anywhere=True)
@@ -122,7 +107,11 @@ def on_screen():
             continue
 
 if __name__ == "__main__":
-    with ThreadPoolExecutor(1) as executor:
-        FUTURE = executor.submit(load_android)
+    try:
+        # with ThreadPoolExecutor(1) as executor:
+        #    FUTURE = executor.submit(load_android)
 
-    # on_screen()
+        on_screen()
+    except KeyboardInterrupt:
+        print(KeyboardInterrupt)
+        sys.exit(1)
