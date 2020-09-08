@@ -33,15 +33,15 @@ def load_android():
             uuid = '5E7B99D0-F404-4425-8125-98A2265B4333'
             bluetooth.advertise_service(
                 bsocket, "MyServer", service_id=uuid,
-                service_classes=[ uuid, bluetooth.SERIAL_PORT_CLASS ],
-                profiles=[ bluetooth.SERIAL_PORT_PROFILE ],
+                service_classes = [uuid, bluetooth.SERIAL_PORT_CLASS],
+                profiles = [bluetooth.SERIAL_PORT_PROFILE],
             )
 
             client_socket, address = bsocket.accept()
             print("Bluetooth:Accepted connection from " + address)
 
             # 受信するまでブロッキング
-            data = client_sock.recv(1024)
+            data = client_socket.recv(1024)
             print("Bluetooth:received [%s]" % data)
             # 受信したデータを辞書型（JSON）に変換
             jsondata = json.loads(data)
@@ -64,7 +64,7 @@ def load_android():
         except queue.Full as queue_ex:
             print(queue_ex)
 
-        except:
+        except Exception as e:
             # クリティカルな例外（終了させる）
             print("Bluetooth:[Fatal]\n")
             client_socket.close()
