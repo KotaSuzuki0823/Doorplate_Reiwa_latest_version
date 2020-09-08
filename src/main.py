@@ -15,7 +15,7 @@ import PySimpleGUI as sg
 BLANK_STYLEDATA = {'Title': "離席中", 'SubTitle': "しばらく席を外しています", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF", 'Token': ""}
 #styledataのキュー（FIFO）
 styledata_queue = queue.Queue()
-# tyledata_queue.put({'Title': "離席中", 'SubTitle': "しばらく席を外しています", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF", 'Token': ""})
+ tyledata_queue.put({'Title': "離席中", 'SubTitle': "しばらく席を外しています", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF", 'Token': ""})
 
 args = sys.argv
 
@@ -108,8 +108,8 @@ def on_screen():
 
 if __name__ == "__main__":
     try:
-        # with ThreadPoolExecutor(1) as executor:
-        #    FUTURE = executor.submit(load_android)
+        with ThreadPoolExecutor(1) as executor:
+            FUTURE = executor.submit(load_android)
 
         on_screen()
     except KeyboardInterrupt:
