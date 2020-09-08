@@ -29,6 +29,13 @@ def load_android():
         print("Bluetooth:Listening...")
         bsocket.listen(1)
 
+        uuid = '5E7B99D0-F404-4425-8125-98A2265B4333'
+        bluetooth.advertise_service(
+            server_sock, "MyServer", service_id=uuid,
+            service_classes=[ uuid, bluetooth.SERIAL_PORT_CLASS ],
+            profiles=[ bluetooth.SERIAL_PORT_PROFILE ],
+        )
+
         client_socket, address = bsocket.accept()
         print("Bluetooth:Accepted connection from " + address)
 
