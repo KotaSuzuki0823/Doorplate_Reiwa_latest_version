@@ -25,7 +25,7 @@ def load_android():
     while True:
         print("Bluetooth:Socket is create.")
         bsocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-        bsocket.bind('', bluetooth.PORT_ANY)
+        bsocket.bind(('', bluetooth.PORT_ANY))
         print("Bluetooth:Listening...")
         bsocket.listen(1)
 
