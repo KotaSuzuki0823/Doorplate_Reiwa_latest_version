@@ -12,6 +12,11 @@ import sys
 import requests
 import cv2
 
+# プッシュ通知用
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import messaging
+
 # ホームディレクトリのパス
 HOME = os.environ['HOME']
 # 画像の格納パス
@@ -27,8 +32,11 @@ INTERVAL = 30
 DETECTSIZE = 1000
 
 # プッシュ通知の認証キー
-AUTHORIZATION_KEY = 'key=AAAAlNSzCwE:APA91bHCIcrJeRbN13m2QEY5pXjgzwpQ_q5L6qlcdBk1NJQFx2ffGxja9EHrg62Zd_sNm_r6C6HIuRKkNjygo0WhuHuYc7mGSwFGBGXiR44G6S80gKMtr3TtwnFbh4eIepOMRT8nHn7c'
+# This registration token comes from the client FCM SDKs.
+AUTHORIZATION_KEY = 'cHJ73QDYQA-Jj0vnMrxvqg:APA91bEKOF5aF-S-g9iXifJ77ggq6A46j57OY8XEaY9AKCN-4IDMRJ4MIi8geUSpRYzu91P95R7uC_NmuuL4SmdzrW1YuqZe5daMd9i4VQnl0ZG-gEd_j7dsY5KCVhxB8UtAHU1ikC-8'
 
+CRED = credentials.Certificate("firebase.json")
+firebase_admin.initialize_app(CRED)
 
 def makepicpathdir(path):
     """
@@ -121,12 +129,22 @@ def send_notification():
     Android端末へプッシュ通知を送信する
     :return:
     """
-    payload = {'notification': "ドアプレート", 'body': "訪問者を検知しました．"}
-    headers = {'Authorization': AUTHORIZATION_KEY, 'Content-Type': 'application/json'}
-    res = requests.post(URL, headers=headers, data=json.dumps(payload))
 
-    # レスポンスの表示
-    print(res.text)
+    # See documentation on defining a message payload.
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title='ドアプレート',
+            body='訪問者を検知しました',
+        ),
+        token=AUTHORIZATION_KEY,
+    )
+
+    # Send a message to the device corresponding to the provided
+    # registration token.
+    response = messaging.send(message)
+    # Response is a message ID string.
+    print('Successfully sent message:', response)
+
 
 def motion():
     """
@@ -147,6 +165,8 @@ def motion():
 
 
 # motion確認用
+
+"""
 if __name__ == "__main__":
     makepicpathdir(PICK_PATH)
     try:
@@ -165,3 +185,7 @@ if __name__ == "__main__":
     # Ctrl-Cを押した時
     except KeyboardInterrupt:
         print(KeyboardInterrupt)
+"""
+
+if __name__ == "__main__":
+    send_notification()
