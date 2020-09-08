@@ -5,6 +5,7 @@ import socket
 import json
 import sys
 import queue
+import ast
 from concurrent.futures import ThreadPoolExecutor
 
 #https://pypi.org/project/PySimpleGUI/
@@ -30,19 +31,20 @@ def load_android():
         print("Socket:Create socket"+args[1]+" 55555")
 
         s.listen(1)
-        print("Socket:Listening...")
+        
 
         while True:
             try:
+                print("Socket:Listening...")
                 # 誰かがアクセスしてきたら、コネクションとアドレスを入れる
                 conn, addr = s.accept()
-                print("Socket:accept " + addr)
+                print("Soket:Connection: "+str(addr[0]))
             
                 # データを受け取る
                 data = conn.recv(1024)
-                print("Socket:"+data)
-                jsondata = json.loads(data)
-                styledata_queue.put(jsondata)
+                print("Socket:"+str(data.decode()))
+                dicdata = ast.literal_eval(data.decode())
+                styledata_queue.put(dicdata)
 
             except (json.JSONDecodeError, ValueError, queue.Full) as jsone:
                 # JSON変換に関連する例外（ValueErrorはJSONDecodeErrorの親クラス）
@@ -52,7 +54,10 @@ def load_android():
                 # クリティカルな例外（終了させる）
                 print("Socket:[Fatal]\n")
                 styledata_queue.put(BLANK_STYLEDATA)
-                break
+                # break
+
+            except Exception as ee:
+                print(ee)
 
             finally:
                 conn.close()
@@ -108,11 +113,8 @@ def on_screen():
             continue
 
 if __name__ == "__main__":
-    try:
-        with ThreadPoolExecutor(1) as executor:
-            FUTURE = executor.submit(load_android)
+    with ThreadPoolExecutor(1) as executor:
+        FUTURE = executor.submit(load_android)
 
-        # on_screen()
-    except KeyboardInterrupt:
-        print(KeyboardInterrupt)
+    on_screen()
         
