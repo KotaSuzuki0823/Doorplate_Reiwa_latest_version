@@ -33,10 +33,11 @@ def load_android():
         print("Socket:Listening...")
 
         while True:
-            # 誰かがアクセスしてきたら、コネクションとアドレスを入れる
-            conn, addr = s.accept()
-            print("Socket:accept " + addr)
             try:
+                # 誰かがアクセスしてきたら、コネクションとアドレスを入れる
+                conn, addr = s.accept()
+                print("Socket:accept " + addr)
+            
                 # データを受け取る
                 data = conn.recv(1024)
                 print("Socket:"+data)
@@ -114,4 +115,4 @@ if __name__ == "__main__":
         # on_screen()
     except KeyboardInterrupt:
         print(KeyboardInterrupt)
-        sys.exit(1)
+        
