@@ -56,7 +56,7 @@ def get_photo(dirpath):
         print("Run raspistill...")
         subprocess.check_call(cmd)
 
-    except Exception as ex:
+    except subprocess.CalledProcessError as ex:
         print("subprocess.check_call() failed:" + ex)
         sys.exit(1)
 
@@ -84,7 +84,7 @@ def move_detect(img):
     cv2.accumulateWeighted(gray_image, bef_image, 0.00001)
     delta = cv2.absdiff(gray_image, cv2.convertScaleAbs(bef_image))
     thresh = cv2.threshold(delta, 50, 255, cv2.THRESH_BINARY)[1]
-    image, contours, h = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    image, contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # 画像内の最も大きな差分を求める
     max_area = 0
