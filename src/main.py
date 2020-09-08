@@ -25,8 +25,7 @@ def load_android():
     while True:
         print("Bluetooth:Socket is create.")
         bsocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-        port = 5
-        bsocket.bind(port)
+        bsocket.bind('', bluetooth.PORT_ANY)
         print("Bluetooth:Listening...")
         bsocket.listen(1)
 
@@ -120,4 +119,4 @@ if __name__ == "__main__":
     with ThreadPoolExecutor(1) as executor:
         FUTURE = executor.submit(load_android)
 
-    on_screen()
+    # on_screen()
