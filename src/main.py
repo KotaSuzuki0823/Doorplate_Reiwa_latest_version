@@ -111,7 +111,7 @@ if __name__ == "__main__":
         with ThreadPoolExecutor(1) as executor:
             FUTURE = executor.submit(load_android)
 
-        on_screen()
+        # on_screen()
     except KeyboardInterrupt:
         print(KeyboardInterrupt)
         sys.exit(1)
