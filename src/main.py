@@ -23,23 +23,22 @@ def load_android():
     :return:
     """
     while True:
+        print("Bluetooth:Socket is create.")
+        bsocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+        bsocket.bind(('', bluetooth.PORT_ANY))
+        print("Bluetooth:Listening...")
+        bsocket.listen(1)
+
+        uuid = '00001101-0000-1000-8000-00805F9B34FB'
+        bluetooth.advertise_service(
+            bsocket, "MyServer", service_id=uuid,
+            service_classes = [uuid, bluetooth.SERIAL_PORT_CLASS],
+            profiles = [bluetooth.SERIAL_PORT_PROFILE],
+        )
+        print("Bluetooth:UUID is " + uuid)
+        client_socket, address = bsocket.accept()
+        print("Bluetooth:Accepted connection from " + address)
         try:
-            print("Bluetooth:Socket is create.")
-            bsocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-            bsocket.bind(('', bluetooth.PORT_ANY))
-            print("Bluetooth:Listening...")
-            bsocket.listen(1)
-
-            uuid = '5E7B99D0-F404-4425-8125-98A2265B4333'
-            bluetooth.advertise_service(
-                bsocket, "MyServer", service_id=uuid,
-                service_classes = [uuid, bluetooth.SERIAL_PORT_CLASS],
-                profiles = [bluetooth.SERIAL_PORT_PROFILE],
-            )
-            print("Bluetooth:UUID is " + uuid)
-            client_socket, address = bsocket.accept()
-            print("Bluetooth:Accepted connection from " + address)
-
             # 受信するまでブロッキング
             data = client_socket.recv(1024)
             print("Bluetooth:received [%s]" % data)
