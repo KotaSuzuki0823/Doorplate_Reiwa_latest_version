@@ -2,7 +2,7 @@
 GUI
 '''
 import socket
-import json
+import traceback
 import sys
 import queue
 import ast
@@ -16,7 +16,7 @@ import PySimpleGUI as sg
 BLANK_STYLEDATA = {'Title': "離席中", 'SubTitle': "しばらく席を外しています", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF", 'Token': ""}
 #styledataのキュー（FIFO）
 styledata_queue = queue.Queue()
-styledata_queue.put({'Title': "離席中", 'SubTitle': "しばらく席を外しています", 'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF", 'Token': ""})
+styledata_queue.put(BLANK_STYLEDATA)
 
 args = sys.argv
 
@@ -27,11 +27,11 @@ def load_android():
     :return:
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((args[1], 55555))
+        # s.bind((args[1], 55555))
+        s.bind(("192.168.100.51", 55555))
         print("Socket:Create socket"+args[1]+" 55555")
 
         s.listen(1)
-        
 
         while True:
             try:
@@ -42,12 +42,11 @@ def load_android():
             
                 # データを受け取る
                 data = conn.recv(1024)
-                print("Socket:"+str(data.decode()))
-                dicdata = ast.literal_eval(data.decode())
+                print("Socket:"+str(data.decode('utf-8')))
+                dicdata = ast.literal_eval("{" + str(data) + "}")
                 styledata_queue.put(dicdata)
 
-            except (json.JSONDecodeError, ValueError, queue.Full) as jsone:
-                # JSON変換に関連する例外（ValueErrorはJSONDecodeErrorの親クラス）
+            except (ValueError, queue.Full) as jsone:
                 print("Socket:[JSON Exception]%s\n" % jsone)
 
             except socket.error as e:
@@ -57,7 +56,7 @@ def load_android():
                 # break
 
             except Exception as ee:
-                print(ee)
+                traceback.print_exc()
 
             finally:
                 conn.close()
@@ -113,8 +112,8 @@ def on_screen():
             continue
 
 if __name__ == "__main__":
-    with ThreadPoolExecutor(1) as executor:
-        FUTURE = executor.submit(load_android)
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        pool.submit(load_android)
 
     on_screen()
         
