@@ -24,7 +24,7 @@ HOME = os.environ['HOME']
 URL = 'https://fcm.googleapis.com/fcm/send'
 
 # サーバ通知のインターバル(秒)
-INTERVAL = 30
+INTERVAL = 10
 
 # 動体検知の精度
 DETECTSIZE = 1000
@@ -41,8 +41,8 @@ def get_photo(dirpath):
     ラズパイカメラで写真を撮影
     :return:　String型　撮影した画像のパス
     """
-    nowstr = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    photopath = dirpath + "/" + nowstr + ".jpg"
+    #nowstr = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    photopath = dirpath + "/before.jpg"
     cmd = ["raspistill", "-t", "2000", "-o", photopath]
 
     try:
@@ -96,6 +96,7 @@ class MotionDetect:
             return False
 
         # 前画像との差分を取得する
+        print("get distance...")
         cv2.accumulateWeighted(gray_image, self.bef_image, 0.00001)
         delta = cv2.absdiff(gray_image, cv2.convertScaleAbs(self.bef_image))
         thresh = cv2.threshold(delta, 50, 255, cv2.THRESH_BINARY)[1]
@@ -120,7 +121,7 @@ class MotionDetect:
             return False
 
         # 画像をファイルに保存
-        filename = self.pick_path + "/move_" + now_string + ".jpg"
+        filename = self.pick_path + "/move_pic.jpg"
         cv2.imwrite(filename, img)
 
         # ログ出力
@@ -140,7 +141,7 @@ class MotionDetect:
                 title='ドアプレート',
                 body='訪問者を検知しました',
             ),
-            token=self.__get_token(),
+            token=self.__authorization_key,
         )
 
         # Send a message to the device corresponding to the provided
@@ -153,11 +154,8 @@ class MotionDetect:
         """
         Firebaseトークンキーの更新
         """
-        __authorization_key = token
+        self.__authorization_key = token
         print("Update token key")
-
-    def __get_token(self):
-        return self.__authorization_key
 
     def motion(self):
         """
