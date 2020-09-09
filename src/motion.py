@@ -27,7 +27,7 @@ URL = 'https://fcm.googleapis.com/fcm/send'
 INTERVAL = 15
 
 # 動体検知の精度
-DETECTSIZE = 50
+DETECTSIZE = 400000
 
 # プッシュ通知の認証キー
 # This registration token comes from the client FCM SDKs.

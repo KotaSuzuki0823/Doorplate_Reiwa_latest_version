@@ -95,11 +95,14 @@ def on_screen():
 
             layout = [
                 [sg.Text(" ", font=('ゴシック体', 60), size=(35, 1),\
+                justification='center', background_color=background_color_code)],
+                [sg.Text(" ", font=('ゴシック体', 60), size=(35, 1),\
+                justification='center', background_color=background_color_code)],
+                [sg.Text(styledata['Title'], font=('ゴシック体', 80), size=(35, 1),\
                 justification='center', relief=sg.RELIEF_RIDGE,\
                 background_color=background_color_code)],
-                [sg.Text(styledata['Title'], font=('ゴシック体', 60), size=(35, 1),\
-                justification='center', relief=sg.RELIEF_RIDGE,\
-                background_color=background_color_code)],
+                [sg.Text(" ", font=('ゴシック体', 60), size=(35, 1),\
+                justification='center', background_color=background_color_code)],
                 [sg.Text(styledata['SubTitle'], font=('ゴシック体', 48), size=(45, 1),\
                 justification='center', background_color=background_color_code)]
             ]
