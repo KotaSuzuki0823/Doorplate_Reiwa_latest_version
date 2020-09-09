@@ -27,7 +27,7 @@ URL = 'https://fcm.googleapis.com/fcm/send'
 INTERVAL = 15
 
 # 動体検知の精度
-DETECTSIZE = 5000000
+DETECTSIZE = 50
 
 # プッシュ通知の認証キー
 # This registration token comes from the client FCM SDKs.
@@ -109,6 +109,7 @@ class MotionDetect:
             if max_area < area:
                 max_area = area
 
+        print("max_area:%d"%max_area)
         # 現在時間を取得
         now_string = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         # nowTime = time.time()
