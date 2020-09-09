@@ -26,9 +26,6 @@ URL = 'https://fcm.googleapis.com/fcm/send'
 # サーバ通知のインターバル(秒)
 INTERVAL = 15
 
-# 動体検知の精度
-DETECTSIZE = 400000
-
 # プッシュ通知の認証キー
 # This registration token comes from the client FCM SDKs.
 AUTHORIZATION_KEY = 'cHJ73QDYQA-Jj0vnMrxvqg:APA91bEKOF5aF-S-g9iXifJ77ggq6A46j57OY8XEaY9AKCN-4IDMRJ4MIi8geUSpRYzu91P95R7uC_NmuuL4SmdzrW1YuqZe5daMd9i4VQnl0ZG-gEd_j7dsY5KCVhxB8UtAHU1ikC-8'
@@ -63,6 +60,7 @@ class MotionDetect:
         self.__authorization_key: str = ""
         self.pick_path = picpath
         self.bef_image = None
+        self.threshold = 100000
         self.makepicpathdir()
 
     def makepicpathdir(self):
@@ -122,7 +120,7 @@ class MotionDetect:
         cv2.imwrite(filename, img)
 
         # 動体が無かったら終了
-        if max_area < DETECTSIZE:
+        if max_area < self.threshold:
             return False
 
         # ログ出力
@@ -157,6 +155,12 @@ class MotionDetect:
         """
         self.__authorization_key = token
         print("Update token key")
+
+    def set_threshold(self, threshold: int):
+        """
+        閾値の更新
+        """
+        self.threshold = threshold
 
     def motion(self):
         """

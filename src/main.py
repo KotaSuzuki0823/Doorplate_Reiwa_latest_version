@@ -30,9 +30,10 @@ def load_android():
     https://qiita.com/shippokun/items/0953160607833077163f
     :return:
     """
+    port = 55555
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((args[1], 55555))
-        print('\033[32m'+"Socket"+'\033[0m'+":Create socket "+args[1]+" 55555")
+        s.bind((args[1], port))
+        print('\033[32m'+"Socket"+'\033[0m'+":Create socket "+args[1]+"%d"%port)
         s.listen(1)
 
         while True:
@@ -79,7 +80,10 @@ def on_screen():
             print('\033[36m' + "getting styledate from queue..." + '\033[0m')
             styledata = styledata_queue.get()
 
+            # プッシュ通知のトークン更新
             motion_detect.update_token(styledata.get('Token'))
+            # 閾値の更新
+            motion_detect.set_threshold(int(styledata.get('Threshold')))
 
             print("Setting coler theme")
             # ベースとなるテーマを指定（内容は不問）
@@ -98,9 +102,13 @@ def on_screen():
                 justification='center', background_color=background_color_code)],
                 [sg.Text(" ", font=('ゴシック体', 60), size=(35, 1),\
                 justification='center', background_color=background_color_code)],
+                [sg.Text(" ", font=('ゴシック体', 60), size=(35, 1),\
+                justification='center', background_color=background_color_code)],
+
                 [sg.Text(styledata['Title'], font=('ゴシック体', 80), size=(35, 1),\
                 justification='center', relief=sg.RELIEF_RIDGE,\
                 background_color=background_color_code)],
+
                 [sg.Text(" ", font=('ゴシック体', 60), size=(35, 1),\
                 justification='center', background_color=background_color_code)],
                 [sg.Text(styledata['SubTitle'], font=('ゴシック体', 48), size=(45, 1),\
@@ -124,6 +132,9 @@ def on_screen():
             print(sys.exc_info())
             print(queue_ex)
             continue
+
+        except ValueError:
+            pass
 
         except KeyboardInterrupt:
             sys.exit()
