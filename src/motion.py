@@ -24,10 +24,10 @@ HOME = os.environ['HOME']
 URL = 'https://fcm.googleapis.com/fcm/send'
 
 # サーバ通知のインターバル(秒)
-INTERVAL = 10
+INTERVAL = 15
 
 # 動体検知の精度
-DETECTSIZE = 1000
+DETECTSIZE = 7000000
 
 # プッシュ通知の認証キー
 # This registration token comes from the client FCM SDKs.
@@ -43,7 +43,7 @@ def get_photo(dirpath):
     """
     #nowstr = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     photopath = dirpath + "/before.jpg"
-    cmd = ["raspistill", "-t", "2000", "-o", photopath]
+    cmd = ["raspistill", "-n", "-t", "2000", "-o", photopath]
 
     try:
         print("Run raspistill...")
@@ -162,6 +162,7 @@ class MotionDetect:
         動体検知及び通知を送信を実行する関数
         :return:
         """
+        print("motion_detection is running")
         # makepicpathdir(self.pick_path)
         # 撮影，動体検知，県知事のプッシュ通知を行う
         while True:
