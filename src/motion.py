@@ -116,13 +116,13 @@ class MotionDetect:
         # 次に備えて画像を保存
         self.bef_image = gray_image.copy().astype("float")
 
-        # 動体が無かったら終了
-        if max_area < DETECTSIZE:
-            return False
-
         # 画像をファイルに保存
         filename = self.pick_path + "/move_pic.jpg"
         cv2.imwrite(filename, img)
+
+        # 動体が無かったら終了
+        if max_area < DETECTSIZE:
+            return False
 
         # ログ出力
         print(now_string + ' 動体検知 ' + filename + ' ' + str(max_area))
