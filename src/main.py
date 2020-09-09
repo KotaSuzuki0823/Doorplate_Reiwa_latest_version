@@ -16,7 +16,7 @@ import motion
 
 #styledataの初期状態
 BLANK_STYLEDATA = {'Title': "離席中", 'SubTitle': "しばらく席を外しています",\
-'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF", 'Token': ""}
+'Background_Color': "FF000000", 'Text_Color': "FFFFFFFF", 'Token': "", 'Threshold': "1000000"}
 
 #styledataのキュー（FIFO）
 styledata_queue: "Queue[dict]" = queue.Queue()
