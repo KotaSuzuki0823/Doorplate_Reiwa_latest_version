@@ -94,6 +94,9 @@ def on_screen():
             sg.theme_text_color(text_color_code)
 
             layout = [
+                [sg.Text(" ", font=('ゴシック体', 60), size=(35, 1),\
+                justification='center', relief=sg.RELIEF_RIDGE,\
+                background_color=background_color_code)],
                 [sg.Text(styledata['Title'], font=('ゴシック体', 60), size=(35, 1),\
                 justification='center', relief=sg.RELIEF_RIDGE,\
                 background_color=background_color_code)],
@@ -118,7 +121,7 @@ def on_screen():
             print(sys.exc_info())
             print(queue_ex)
             continue
-        
+
         except KeyboardInterrupt:
             sys.exit()
 
