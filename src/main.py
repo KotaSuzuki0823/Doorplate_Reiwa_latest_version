@@ -75,6 +75,8 @@ def on_screen():
     motion_thread = threading.Thread(target=motion_detect.motion)
     motion_thread.start()
 
+    window = None
+
     while True:
         try:
             print('\033[36m' + "getting styledate from queue..." + '\033[0m')
@@ -115,18 +117,25 @@ def on_screen():
                 justification='center', background_color=background_color_code)]
             ]
 
-            window = sg.Window('ドアプレート', layout, location=(0, 0), size=(1920, 1200), grab_anywhere=True)
+
+            if window is not None:
+                window.close()
+
+            window = sg.Window('ドアプレート', layout, location=(0, 0), size=(1920, 1200), grab_anywhere=True).Finalize()
+            window.Maximize()
 
             event, values = window.read(timeout=10000)  # ウインドウ作成
             if event is None:
                 window.close()
                 break
 
+            """
             # Queueが空でない場合はウインドウを閉じる
             if not styledata_queue.empty():
                 window.close()
             else:
                 continue
+            """
 
         except queue.Empty as queue_ex:
             print(sys.exc_info())
