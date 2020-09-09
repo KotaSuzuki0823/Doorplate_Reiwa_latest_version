@@ -6,10 +6,8 @@
 import time
 import datetime
 import subprocess
-import json
 import os
 import sys
-import requests
 import cv2
 
 # プッシュ通知用
@@ -20,7 +18,7 @@ from firebase_admin import messaging
 # ホームディレクトリのパス
 HOME = os.environ['HOME']
 # 画像の格納パス
-PICK_PATH = HOME + '/camera/picts'
+# PICK_PATH = HOME + '/camera/picts'
 
 # Push通知のURL
 URL = 'https://fcm.googleapis.com/fcm/send'
@@ -37,19 +35,6 @@ AUTHORIZATION_KEY = 'cHJ73QDYQA-Jj0vnMrxvqg:APA91bEKOF5aF-S-g9iXifJ77ggq6A46j57O
 
 CRED = credentials.Certificate("firebase.json")
 firebase_admin.initialize_app(CRED)
-
-def makepicpathdir(path):
-    """
-    撮影した写真を格納するディレクトリを作成する関数
-    :param path: 保存先のパス
-    :return:
-    """
-    try:
-        os.makedirs(PICK_PATH)
-        print('Created the Directory(' + path + ') ')
-    except FileExistsError:
-        return
-
 
 def get_photo(dirpath):
     """
@@ -70,122 +55,129 @@ def get_photo(dirpath):
 
     return photopath
 
-
-def move_detect(img):
+class MotionDetect:
     """
-    最新の写真と1つ前の写真を比較して，差分から動体検知をする
-    :parm:img cv2のImage型変数 最新の写真
-    :return:　bool型　検知結果
+    動体検知
     """
-    global bef_image
+    bef_image = None
+    def __init__(self, picpath=HOME + '/camera/picts'):
+        self.__authorization_key: str = ""
+        self.pick_path = picpath
 
-    # 入力画像をグレースケールに変換
-    gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        self.makepicpathdir()
 
-    # 前画像がない場合、現画像を保存し終了
-    if bef_image is None:
+    def makepicpathdir(self):
+        """
+        撮影した写真を格納するディレクトリを作成する関数
+        :param path: 保存先のパス
+        :return:
+        """
+        try:
+            os.makedirs(self.pick_path)
+            print('Created the Directory(' + self.pick_path + ') ')
+        except FileExistsError:
+            return
+
+    # @staticmethod
+    def move_detect(self, img):
+        """
+        最新の写真と1つ前の写真を比較して，差分から動体検知をする
+        :parm:img cv2のImage型変数 最新の写真
+        :return:　bool型　検知結果
+        """
+        # global bef_image
+
+        # 入力画像をグレースケールに変換
+        gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # 前画像がない場合、現画像を保存し終了
+        if bef_image is None:
+            bef_image = gray_image.copy().astype("float")
+            print('Before image is not found. (bef_image is None) ')
+            return False
+
+        # 前画像との差分を取得する
+        cv2.accumulateWeighted(gray_image, bef_image, 0.00001)
+        delta = cv2.absdiff(gray_image, cv2.convertScaleAbs(bef_image))
+        thresh = cv2.threshold(delta, 50, 255, cv2.THRESH_BINARY)[1]
+        image, contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # 画像内の最も大きな差分を求める
+        max_area = 0
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if max_area < area:
+                max_area = area
+
+        # 現在時間を取得
+        now_string = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        # nowTime = time.time()
+
+        # 次に備えて画像を保存
         bef_image = gray_image.copy().astype("float")
-        print('Before image is not found. (bef_image is None) ')
-        return False
 
-    # 前画像との差分を取得する
-    cv2.accumulateWeighted(gray_image, bef_image, 0.00001)
-    delta = cv2.absdiff(gray_image, cv2.convertScaleAbs(bef_image))
-    thresh = cv2.threshold(delta, 50, 255, cv2.THRESH_BINARY)[1]
-    image, contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # 動体が無かったら終了
+        if max_area < DETECTSIZE:
+            return False
 
-    # 画像内の最も大きな差分を求める
-    max_area = 0
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if max_area < area:
-            max_area = area
+        # 画像をファイルに保存
+        filename = self.pick_path + "/move_" + now_string + ".jpg"
+        cv2.imwrite(filename, img)
 
-    # 現在時間を取得
-    now_string = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    # nowTime = time.time()
-
-    # 次に備えて画像を保存
-    bef_image = gray_image.copy().astype("float")
-
-    # 動体が無かったら終了
-    if max_area < DETECTSIZE:
-        return False
-
-    # プッシュ通知を送信
-    send_notification()
-
-    # 画像をファイルに保存
-    filename = PICK_PATH + "/move_" + now_string + ".jpg"
-    cv2.imwrite(filename, img)
-
-    # ログ出力
-    print(now_string + ' 動体検知 ' + filename + ' ' + str(max_area))
-    return True
+        # ログ出力
+        print(now_string + ' 動体検知 ' + filename + ' ' + str(max_area))
+        return True
 
 
-def send_notification():
-    """
-    Android端末へプッシュ通知を送信する
-    :return:
-    """
+    def send_notification(self):
+        """
+        Android端末へプッシュ通知を送信する
+        :return:
+        """
 
-    # See documentation on defining a message payload.
-    message = messaging.Message(
-        notification=messaging.Notification(
-            title='ドアプレート',
-            body='訪問者を検知しました',
-        ),
-        token=AUTHORIZATION_KEY,
-    )
+        # See documentation on defining a message payload.
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title='ドアプレート',
+                body='訪問者を検知しました',
+            ),
+            token=self.__get_token(),
+        )
 
-    # Send a message to the device corresponding to the provided
-    # registration token.
-    response = messaging.send(message)
-    # Response is a message ID string.
-    print('Successfully sent message:', response)
+        # Send a message to the device corresponding to the provided
+        # registration token.
+        response = messaging.send(message)
+        # Response is a message ID string.
+        print('Successfully sent message:', response)
 
+    def update_token(self, token: str):
+        """
+        Firebaseトークンキーの更新
+        """
+        __authorization_key = token
+        print("Update token key")
 
-def motion():
-    """
-    動体検知及び通知を送信を実行する関数
-    :return:
-    """
-    makepicpathdir(PICK_PATH)
-    # 撮影，動体検知，県知事のプッシュ通知を行う
-    while True:
-        photo_path = get_photo(PICK_PATH)
-        move = move_detect(cv2.imread(photo_path))
-        if move:
-            # 動態検知した場合，プッシュ通知を送信
-            send_notification()
+    def __get_token(self):
+        return self.__authorization_key
 
-        # 一時停止
-        time.sleep(INTERVAL)
-
-
-# motion確認用
-
-"""
-if __name__ == "__main__":
-    makepicpathdir(PICK_PATH)
-    try:
-        print("Running System, press Ctrl-C to exit")
+    def motion(self):
+        """
+        動体検知及び通知を送信を実行する関数
+        :return:
+        """
+        # makepicpathdir(self.pick_path)
         # 撮影，動体検知，県知事のプッシュ通知を行う
         while True:
-            PHOTO_PATH = get_photo(PICK_PATH)
-            MOVE = move_detect(cv2.imread(PHOTO_PATH))
-            if MOVE:
+            photo_path = get_photo(self.pick_path)
+            move = self.move_detect(cv2.imread(photo_path))
+            if move:
                 # 動態検知した場合，プッシュ通知を送信
-                send_notification()
+                self.send_notification()
 
             # 一時停止
             time.sleep(INTERVAL)
 
-    # Ctrl-Cを押した時
-    except KeyboardInterrupt:
-        print(KeyboardInterrupt)
-"""
-
 if __name__ == "__main__":
-    send_notification()
+    test = MotionDetect()
+    test.update_token("fj-wiPY4QIauOupmBf6gfV:APA91bH04B6B6huYRRi4tKAe6N3fCJd-6rFV64X6DPkmBE7CwMm__alEVb3b_aT3pk_11gtlAL89JOMI95mAa7Lj5Na5REovGD7VheG5xDie2eK_tTVEBorMBXWHy8kJ4u4SKHIKNu1J")
+    test.motion()

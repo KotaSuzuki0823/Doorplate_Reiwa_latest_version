@@ -11,7 +11,8 @@ import json
 
 #https://pypi.org/project/PySimpleGUI/
 import PySimpleGUI as sg
-# import bluetooth
+
+import motion
 
 #styledataの初期状態
 BLANK_STYLEDATA = {'Title': "離席中", 'SubTitle': "しばらく席を外しています",\
@@ -69,6 +70,9 @@ def on_screen():
     https://qiita.com/dario_okazaki/items/656de21cab5c81cabe59
     :return:
     """
+    motion_detect = motion.MotionDetect()
+    motion_thread = threading.Thread(target=motion_detect.motion)
+
     while True:
         try:
             print('\033[36m' + "getting styledate from queue..." + '\033[0m')
@@ -78,6 +82,8 @@ def on_screen():
             print(sys.exc_info())
             print(queue_ex)
             continue
+
+        motion_detect.update_token(styledata.get('Token'))
 
         print("Setting coler theme")
         # ベースとなるテーマを指定（内容は不問）
