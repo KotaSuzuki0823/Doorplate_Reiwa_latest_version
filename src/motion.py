@@ -90,14 +90,14 @@ class MotionDetect:
         gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # 前画像がない場合、現画像を保存し終了
-        if bef_image is None:
-            bef_image = gray_image.copy().astype("float")
+        if self.bef_image is None:
+            self.bef_image = gray_image.copy().astype("float")
             print('Before image is not found. (bef_image is None) ')
             return False
 
         # 前画像との差分を取得する
-        cv2.accumulateWeighted(gray_image, bef_image, 0.00001)
-        delta = cv2.absdiff(gray_image, cv2.convertScaleAbs(bef_image))
+        cv2.accumulateWeighted(gray_image, self.bef_image, 0.00001)
+        delta = cv2.absdiff(gray_image, cv2.convertScaleAbs(self.bef_image))
         thresh = cv2.threshold(delta, 50, 255, cv2.THRESH_BINARY)[1]
         image, contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -113,7 +113,7 @@ class MotionDetect:
         # nowTime = time.time()
 
         # 次に備えて画像を保存
-        bef_image = gray_image.copy().astype("float")
+        self.bef_image = gray_image.copy().astype("float")
 
         # 動体が無かったら終了
         if max_area < DETECTSIZE:
