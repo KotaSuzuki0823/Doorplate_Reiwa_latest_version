@@ -59,11 +59,10 @@ class MotionDetect:
     """
     動体検知
     """
-    bef_image = None
     def __init__(self, picpath=HOME + '/camera/picts'):
         self.__authorization_key: str = ""
         self.pick_path = picpath
-
+        self.bef_image = None
         self.makepicpathdir()
 
     def makepicpathdir(self):
@@ -85,7 +84,7 @@ class MotionDetect:
         :parm:img cv2のImage型変数 最新の写真
         :return:　bool型　検知結果
         """
-        # global bef_image
+        #global bef_image
 
         # 入力画像をグレースケールに変換
         gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
